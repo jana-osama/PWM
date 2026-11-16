@@ -1,0 +1,71 @@
+#define F_CPU 16000000UL
+
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdint.h>
+#include "LCD.h"
+#include "BIT_MATH.h"
+#include <avr/interrupt.h>
+
+void Timer0_Init(void)
+{
+	TCCR0A |= (1 << WGM01);
+	OCR0A = 249;
+	TIMSK0 |= (1 << OCIE0A);
+	TCCR0B |= (1 << CS01) | (1 << CS00);
+	sei();
+}
+
+void Timer0_FastPWM_Init(void)
+{
+	TCCR0A |= (1 << WGM00) | (1 << WGM01) | (1 << COM0A1);
+	TCCR0B |= (1 << CS00);
+}
+
+ISR(TIMER0_COMPA_vect)
+{
+	static unsigned char counter = 0;
+	counter++;
+	if(counter == 5)
+	CLR_BIT(PORTD, 0);
+	else if(counter == 10)
+	CLR_BIT(PORTD, 1);
+	else if(counter == 15)
+	CLR_BIT(PORTD, 2);
+	else if(counter == 20)
+	{
+		SET_BIT(PORTD, 0);
+		SET_BIT(PORTD, 1);
+		SET_BIT(PORTD, 2);
+		counter = 0;
+	}
+}
+
+int main(void)
+{
+	uint8_t i = 0;
+
+	SET_BIT(DDRD, 6);
+
+	Timer0_FastPWM_Init();
+
+	for(i = 0; i < 255; i++)
+	{
+		OCR0A = i;
+		_delay_ms(10);
+	}
+
+	SET_BIT(DDRD, 0);
+	SET_BIT(DDRD, 1);
+	SET_BIT(DDRD, 2);
+
+	SET_BIT(PORTD, 0);
+	SET_BIT(PORTD, 1);
+	SET_BIT(PORTD, 2);
+
+	Timer0_Init();
+	
+	while(1)
+	{
+	}
+}
